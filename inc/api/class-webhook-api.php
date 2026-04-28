@@ -303,6 +303,16 @@ class Webhook_API {
 						continue;
 					}
 
+					if ( function_exists( 'gzdeflate' ) ) {
+						$body = base64_encode( gzdeflate( $body, 9 ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+					} elseif ( function_exists( 'gzcompress' ) ) {
+						$body = base64_encode( gzcompress( $body, 9 ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+					}
+
+					if ( ! $body ) {
+						$body = wp_json_encode( $payload, Utils::JSON_OPTIONS );
+					}
+
 					Scheduler::get_instance()->schedule_single_action( time(), $hook, $params );
 				}
 			}
@@ -321,6 +331,23 @@ class Webhook_API {
 	 * @return array|WP_Error HTTP response or WP_Error on failure.
 	 */
 	public function fire_webhook( $url, $secret, $body, $action ) {
+		$pristine_body = $body;
+
+		// check if the body is base64-encoded compressed data, and if so, decode and decompress it before sending the request
+		if ( base64_encode( base64_decode( $body, true ) ) === $body ) { // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode, WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+			$body = base64_decode( $body, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		}
+
+		if ( function_exists( 'gzinflate' ) ) {
+			$body = gzinflate( $body );
+		} elseif ( function_exists( 'gzuncompress' ) ) {
+			$body = gzuncompress( $body );
+		}
+
+		if ( ! $body ) {
+			$body = $pristine_body;
+		}
+
 		return wp_remote_post(
 			$url,
 			array(
