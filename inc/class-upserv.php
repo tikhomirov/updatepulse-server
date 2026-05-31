@@ -863,8 +863,8 @@ class UPServ {
 			foreach ( $styles as $key => $values ) {
 
 				if ( isset( $values['path'] ) && file_exists( $values['path'] ) ) {
-					$version        = filemtime( $values['path'] ) || '1';
-					$values['deps'] = $values['deps'] ?? [];
+					$version        = filemtime( $values['path'] );
+					$values['deps'] = isset( $values['deps'] ) ? $values['deps'] : array();
 					$suffix         = '-admin-style';
 
 					wp_enqueue_style(
@@ -877,9 +877,7 @@ class UPServ {
 					if ( isset( $values['inline'] ) ) {
 						wp_add_inline_style( 'upserv-' . $key . $suffix, $values['inline'] );
 					}
-				} else {
-                    trigger_error('Style ' . $key . ' not found. In '. $values['path'], E_USER_ERROR );
-                }
+				}
 			}
 		}
 
