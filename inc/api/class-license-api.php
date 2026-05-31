@@ -1146,21 +1146,20 @@ class License_API {
 	 * @since 1.0.0
 	 */
 	protected function handle_license_activation( $license, $domain ) {
+		$domain_count = count( $license->allowed_domains ) + 1;
 
 		if ( in_array( $license->status, array( 'expired', 'blocked', 'on-hold' ), true ) ) {
 			$this->http_response_code = 403;
 
 			return $this->prepare_illegal_status_response( $license );
-		} elseif ( 'activated' === $license->status && in_array( $domain, $license->allowed_domains, true ) ) {
-			$this->http_response_code = 409;
-
-			return $this->process_already_activated( $license, $domain );
-		} elseif (
-			( count( $license->allowed_domains ) + 1 ) > abs( intval( $license->max_allowed_domains ) )
-		) {
+		} elseif ( $domain_count > abs( intval( $license->max_allowed_domains ) ) ) {
 			$this->http_response_code = 422;
 
 			return $this->prepare_max_domains_response( $license );
+		} elseif ( 'activated' === $license->status && in_array( $domain, $license->allowed_domains, true ) ) {
+			$this->http_response_code = 409;
+
+			return $this->prepare_already_activated_response( $domain );
 		}
 
 		return $this->process_license_activation( $license, $domain );
@@ -1207,69 +1206,18 @@ class License_API {
 	}
 
 	/**
-	 * Process already activated license
+	 * Prepare already activated response
 	 *
-	 * @param object $license
 	 * @param string $domain
 	 * @return array The response
 	 * @since 1.0.0
 	 */
-	protected function process_already_activated( $license, $domain ) {
-		$data = isset( $license->data ) ? $license->data : array();
-		$op   = 'read';
-
-		if ( ! isset( $data['next_deactivate'] ) || time() > $data['next_deactivate'] ) {
-			/**
-			 * Filter the timestamp for the next allowed deactivation after activation.
-			 *
-			 * @param int    $timestamp The timestamp for the next allowed deactivation.
-			 * @param object $license   The license object.
-			 * @since 1.0.0
-			 */
-			$data['next_deactivate'] = apply_filters( 'upserv_activate_license_next_deactivate', time(), $license );
-			$op                      = 'edit';
-		}
-
-		$payload = array(
-			'license_key'     => $license->license_key,
-			'status'          => 'activated',
-			'allowed_domains' => array_unique( array_merge( array( $domain ), $license->allowed_domains ) ),
-			'data'            => $data,
-		);
-
-		try {
-			if ( 'edit' === $op ) {
-				$result = $this->license_server->edit_license(
-					/**
-					 * Filter the payload for license activation.
-					 *
-					 * @param array $payload The license activation payload.
-					 * @since 1.0.0
-					 */
-					apply_filters( 'upserv_activate_license_payload', $payload )
-				);
-			} else {
-				$result = $this->license_server->read_license( $payload );
-			}
-		} catch ( Exception $e ) {
-			return array( $e->getMessage() );
-		}
-
-		if ( is_object( $result ) ) {
-			$result->license_signature = $this->license_server->generate_license_signature( $license, $domain );
-			$result->next_deactivate   = $data['next_deactivate'];
-
-			$this->sanitize_license_result( $result );
-		} else {
-			$result = null;
-		}
-
+	protected function prepare_already_activated_response( $domain ) {
 		return array(
 			'code'    => 'license_already_activated',
 			'message' => __( 'The license is already activated for the specified domain.', 'updatepulse-server' ),
 			'data'    => array(
-				'domain'  => $domain,
-				'license' => $result,
+				'domain' => $domain,
 			),
 		);
 	}
@@ -1350,7 +1298,7 @@ class License_API {
 		} elseif ( 'deactivated' === $license->status || ! in_array( $domain, $license->allowed_domains, true ) ) {
 			$this->http_response_code = 409;
 
-			return $this->process_already_deactivated( $license, $domain );
+			return $this->prepare_already_deactivated_response( $domain );
 		} elseif (
 			isset( $license->data, $license->data['next_deactivate'] ) &&
 			$license->data['next_deactivate'] > time()
@@ -1364,34 +1312,18 @@ class License_API {
 	}
 
 	/**
-	 * Process already deactivated
+	 * Prepare already deactivated response
 	 *
-	 * @param object $license
 	 * @param string $domain
 	 * @return array The response
-	 * @since 1.0.11
+	 * @since 1.0.0
 	 */
-	protected function process_already_deactivated( $license, $domain ) {
-		$payload = array( 'license_key' => $license->license_key );
-
-		try {
-			$result = $this->license_server->read_license( $payload );
-		} catch ( Exception $e ) {
-			return array( $e->getMessage() );
-		}
-
-		if ( is_object( $result ) ) {
-			$this->sanitize_license_result( $result );
-		} else {
-			$result = null;
-		}
-
+	protected function prepare_already_deactivated_response( $domain ) {
 		return array(
 			'code'    => 'license_already_deactivated',
 			'message' => __( 'The license is already deactivated for the specified domain.', 'updatepulse-server' ),
 			'data'    => array(
-				'domain'  => $domain,
-				'license' => $result,
+				'domain' => $domain,
 			),
 		);
 	}
@@ -1452,7 +1384,7 @@ class License_API {
 				 * @param array $payload The license deactivation payload.
 				 * @since 1.0.0
 				 */
-				apply_filters( 'upserv_deactivate_license_payload', $payload )
+				apply_filters( 'upserv_activate_license_payload', $payload )
 			);
 		} catch ( Exception $e ) {
 			return array( $e->getMessage() );

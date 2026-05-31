@@ -78,6 +78,7 @@ class Licenses_Table extends WP_List_Table {
 			'col_license_key'  => __( 'License Key', 'updatepulse-server' ),
 			'col_email'        => __( 'Registered Email', 'updatepulse-server' ),
 			'col_status'       => __( 'Status', 'updatepulse-server' ),
+			'col_domains'      => __( 'Domains', 'updatepulse-server' ),
 			'col_package_type' => __( 'Package Type', 'updatepulse-server' ),
 			'col_package_slug' => __( 'Package Slug', 'updatepulse-server' ),
 			'col_date_created' => __( 'Creation Date', 'updatepulse-server' ),
@@ -349,17 +350,6 @@ class Licenses_Table extends WP_List_Table {
 		if ( 'bottom' === $which ) {
 			print '<div class="alignleft actions bulkactions"><input id="post-query-submit" type="button" name="upserv_delete_all_licenses" value="' . esc_html( __( 'Delete All Licenses', 'updatepulse-server' ) ) . '" class="button upserv-delete-all-licenses"><input id="add_license_trigger" type="button" value="' . esc_html( __( 'Add License', 'updatepulse-server' ) ) . '" class="button button-primary open-panel"></div>';
 		}
-	}
-
-	/**
-	 * No items message
-	 *
-	 * Display a message and a button when no items are found
-	 *
-	 * @since 1.0.11
-	 */
-	public function no_items() {
-		print '<div class="no-items"><p>' . esc_html( __( 'No items found.', 'updatepulse-server' ) ) . '</p><p><input id="add_license_trigger" type="button" value="' . esc_html( __( 'Add License', 'updatepulse-server' ) ) . '" class="button button-primary open-panel"></p></div>';
 	}
 
 	/**

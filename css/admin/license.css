@@ -242,3 +242,15 @@ span.upserv-domain-value {
     background: #f8dda7;
     color: #573b00;
 }
+
+#upserv-licenses-list .upserv-domain-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.15em 0.5em;
+    margin: 0.15em 0.25em;
+    background: #e7ecf0;
+    color: #2c3340;
+    border-radius: 3px;
+    white-space: nowrap;
+}

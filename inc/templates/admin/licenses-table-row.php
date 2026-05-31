@@ -52,6 +52,19 @@
 					<?php echo wp_kses_post( $actions ); ?>
 				<?php elseif ( 'col_status' === $column_name ) : ?>
 					<mark><span><?php echo esc_html( ucfirst( $record['status_label'] ) ); ?></span></mark>
+				<?php elseif ( 'col_domains' === $column_name ) : ?>
+					<?php
+					$domains = isset( $record['allowed_domains'] ) && is_array( $record['allowed_domains'] ) ? $record['allowed_domains'] : array();
+					if ( ! empty( $domains ) ) :
+						foreach ( $domains as $domain ) :
+					?>
+						<span class="upserv-domain-badge"><?php echo esc_html( $domain ); ?></span>
+					<?php
+						endforeach;
+					else :
+						esc_html_e( '—', 'updatepulse-server' );
+					endif;
+					?>
 				<?php elseif ( 'col_package_type' === $column_name ) : ?>
 					<?php echo esc_html( ucfirst( $record[ $key ] ) ); ?>
 				<?php elseif ( 'col_package_slug' === $column_name ) : ?>
