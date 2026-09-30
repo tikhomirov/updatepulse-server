@@ -101,6 +101,11 @@ if ( is_array( $options ) && ! empty( $options ) && isset( $options['api'] ) ) {
 Nonce::register();
 Nonce::init_auth( $private_keys );
 
+// Ensure helper functions are available during activation:
+// the plugin file may be loaded after 'plugins_loaded' has fired,
+// in which case upserv_run() (and its require of functions.php) never runs.
+require_once UPSERV_PLUGIN_PATH . 'functions.php';
+
 // Register activation, deactivation and uninstall hooks for core plugin classes
 // Skip during API requests to optimize performance
 if (
