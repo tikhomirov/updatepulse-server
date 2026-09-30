@@ -40,18 +40,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @return void
  */
-function upserv_muplugins_loaded() {
+function upserv_muplugins_loaded(): void {
 	// Get host information from server variables
-	$host = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : false;
-	$url  = '';
+	$http_host = isset( $_SERVER['HTTP_HOST'] ) && is_string( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : '';
+	$host      = $http_host !== '' ? sanitize_text_field( wp_unslash( $http_host ) ) : '';
+	$url       = '';
 
 	// Fallback to SERVER_NAME if HTTP_HOST is not available
-	if ( ! $host && isset( $_SERVER['SERVER_NAME'] ) ) {
+	if ( $host === '' && isset( $_SERVER['SERVER_NAME'] ) && is_string( $_SERVER['SERVER_NAME'] ) ) {
 		$host = sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ) );
 	}
 
 	// Construct the full URL if host and request URI are available
-	if ( $host && isset( $_SERVER['REQUEST_URI'] ) ) {
+	if ( $host !== '' && isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ) {
 		$request_uri = sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 		$url         = sanitize_url( 'https://' . $host . $request_uri );
 	}
@@ -59,7 +60,7 @@ function upserv_muplugins_loaded() {
 	// Parse URL to determine if this is an API request
 	$path      = str_replace( trailingslashit( home_url() ), '', $url );
 	$frags     = explode( '/', $path );
-	$doing_api = preg_match( '/^updatepulse-server-((.*?)-api|nonce|token)$/', $frags[0] );
+	$doing_api = preg_match( '/^updatepulse-server-((.*?)-api|nonce|token)$/', $frags[0] ?? '' );
 	$hooks     = array();
 
 	// Apply optimizations if this is an API request
@@ -102,6 +103,10 @@ function upserv_muplugins_loaded() {
 				'shutdown',
 			)
 		);
+
+		/** @var array<mixed> $hooks */
+		$hooks = is_array( $hooks ) ? $hooks : array();
+		$hooks = array_values( array_filter( array_map( static fn ( $hook ): string => is_string( $hook ) ? $hook : '', $hooks ) ) );
 
 		// Remove all filters from specified hooks
 		foreach ( $hooks as $hook ) {
